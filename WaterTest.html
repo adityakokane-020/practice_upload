@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Water Quality Test Checker</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            max-width: 900px;
+            margin: 32px auto;
+            padding: 20px;
+            color: #222;
+        }
+        
+        h1 {
+            margin: 0 0 12px;
+            font-size: 1.6rem;
+        }
+        
+        form {
+            background: #fafafa;
+            padding: 16px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        
+        label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+        }
+        
+        input[type="number"] {
+            width: 160px;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 0.95rem;
+        }
+        
+        button {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 0;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        button[type="submit"] {
+            background: #0b76ef;
+            color: white;
+        }
+        
+        button[type="button"] {
+            background: #eee;
+            color: #222;
+            margin-left: 8px;
+        }
+        
+        .results {
+            margin-top: 18px;
+            padding: 14px;
+            border-radius: 10px;
+        }
+        
+        .overall {
+            font-weight: 700;
+            padding: 10px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        
+        .good {
+            background: #e6f9ea;
+            color: #1a7f2a;
+            border: 1px solid rgba(26, 127, 42, 0.12);
+        }
+        
+        .warning {
+            background: #fff7e6;
+            color: #b46b00;
+            border: 1px solid rgba(180, 107, 0, 0.12);
+        }
+        
+        .bad {
+            background: #ffecec;
+            color: #b61b1b;
+            border: 1px solid rgba(182, 27, 27, 0.12);
+        }
+        
+        ul.messages {
+            list-style: none;
+            padding: 0;
+            margin: 8px 0 0;
+        }
+        
+        ul.messages li {
+            margin: 8px 0;
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        
+        .msg-type {
+            min-width: 72px;
+            text-align: center;
+            font-weight: 700;
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 0.85rem;
+        }
+        
+        .msg-good {
+            background: #eaf7eb;
+            color: #1f7a2d;
+        }
+        
+        .msg-warning {
+            background: #fff3db;
+            color: #a66a00;
+        }
+        
+        .msg-bad {
+            background: #feecec;
+            color: #9d1414;
+        }
+        
+        .notes {
+            margin-top: 12px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        
+        footer {
+            margin-top: 26px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        @media (max-width:520px) {
+            input[type="number"] {
+                width: 100%
+            }
+            .row {
+                flex-direction: column
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Water Quality Test — Input Data</h1>
+    <form id="waterTestForm">
+        <div class="row">
+            <div>
+                <label for="ph">pH Level (0–14)</label>
+                <input type="number" id="ph" name="ph" min="0" max="14" step="0.1" required value="7.2" />
+            </div>
+
+            <div>
+                <label for="turbidity">Turbidity (NTU)</label>
+                <input type="number" id="turbidity" name="turbidity" min="0" step="0.1" required value="2" />
+            </div>
+
+            <div>
+                <label for="hardness">Hardness (mg/L)</label>
+                <input type="number" id="hardness" name="hardness" min="0" step="1" required value="150" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div>
+                <label for="chlorine">Chlorine (mg/L)</label>
+                <input type="number" id="chlorine" name="chlorine" min="0" step="0.01" required value="0.5" />
+            </div>
+
+            <div>
+                <label for="nitrate">Nitrate (mg/L)</label>
+                <input type="number" id="nitrate" name="nitrate" min="0" step="0.01" required value="2" />
+            </div>
+
+            <div>
+                <label for="temperature">Temperature (°C)</label>
+                <input type="number" id="temperature" name="temperature" step="0.1" required value="22" />
+            </div>
+        </div>
+
+        <div style="margin-top:8px;">
+            <button type="submit">Check Water Quality</button>
+            <button type="button" id="resetBtn">Reset</button>
+        </div>
+    </form>
+
+    <div id="resultArea" class="results" aria-live="polite" style="display:none;">
+        <div id="overall" class="overall"></div>
+        <ul id="messages" class="messages"></ul>
+        <div id="notes" class="notes"></div>
+    </div>
+
+    <footer>Ranges used: pH safe 6.5–8.5, turbidity ≤5 NTU, hardness ≤300 mg/L (200–300 caution), chlorine recommended 0.2–4 mg/L, nitrate ≤10 mg/L, temperature 0–35°C (outside = caution).</footer>
+
+    <script>
+        document.getElementById('waterTestForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            // read values
+            const ph = parseFloat(document.getElementById('ph').value);
+            const turbidity = parseFloat(document.getElementById('turbidity').value);
+            const hardness = parseFloat(document.getElementById('hardness').value);
+            const chlorine = parseFloat(document.getElementById('chlorine').value);
+            const nitrate = parseFloat(document.getElementById('nitrate').value);
+            const temperature = parseFloat(document.getElementById('temperature').value);
+
+            // collect messages
+            let messages = [];
+
+            // pH check
+            if (isNaN(ph)) {
+                messages.push({
+                    text: 'pH reading missing or invalid.',
+                    type: 'warning'
+                });
+            } else if (ph < 6.5 || ph > 8.5) {
+                messages.push({
+                    text: `pH level is outside the safe range (6.5 - 8.5). Measured: ${ph}.`,
+                    type: 'bad'
+                });
+            } else {
+                messages.push({
+                    text: `pH level is within the safe range (6.5 - 8.5). Measured: ${ph}.`,
+                    type: 'good'
+                });
+            }
+
+            // Turbidity check
+            if (isNaN(turbidity)) {
+                messages.push({
+                    text: 'Turbidity reading missing or invalid.',
+                    type: 'warning'
+                });
+            } else if (turbidity > 5) {
+                messages.push({
+                    text: `Turbidity is high (above 5 NTU). Measured: ${turbidity} NTU. Water may be cloudy and unsafe.`,
+                    type: 'bad'
+                });
+            } else {
+                messages.push({
+                    text: `Turbidity is within safe limits (≤5 NTU). Measured: ${turbidity} NTU.`,
+                    type: 'good'
+                });
+            }
+
+            // Hardness check
+            if (isNaN(hardness)) {
+                messages.push({
+                    text: 'Hardness reading missing or invalid.',
+                    type: 'warning'
+                });
+            } else if (hardness > 300) {
+                messages.push({
+                    text: `Hardness is high (above 300 mg/L). Measured: ${hardness} mg/L. May cause scaling and taste issues.`,
+                    type: 'bad'
+                });
+            } else if (hardness > 200) {
+                messages.push({
+                    text: `Hardness is moderately high (200-300 mg/L). Measured: ${hardness} mg/L. Consider softening if for domestic use.`,
+                    type: 'warning'
+                });
+            } else {
+                messages.push({
+                    text: `Hardness is within acceptable range (<200 mg/L). Measured: ${hardness} mg/L.`,
+                    type: 'good'
+                });
+            }
+
+            // Chlorine check (free chlorine residual guidance)
+            if (isNaN(chlorine)) {
+                messages.push({
+                    text: 'Chlorine reading missing or invalid.',
+                    type: 'warning'
+                });
+            } else if (chlorine < 0.2) {
+                messages.push({
+                    text: `Chlorine residual is low (below ~0.2 mg/L). Measured: ${chlorine} mg/L. May not disinfect water properly.`,
+                    type: 'warning'
+                });
+            } else if (chlorine > 4) {
+                messages.push({
+                    text: `Chlorine is high (above 4 mg/L). Measured: ${chlorine} mg/L. May cause taste/health issues.`,
+                    type: 'warning'
+                });
+            } else {
+                messages.push({
+                    text: `Chlorine residual is within recommended range (0.2 - 4 mg/L). Measured: ${chlorine} mg/L.`,
+                    type: 'good'
+                });
+            }
+
+            // Nitrate check
+            if (isNaN(nitrate)) {
+                messages.push({
+                    text: 'Nitrate reading missing or invalid.',
+                    type: 'warning'
+                });
+            } else if (nitrate > 10) {
+                messages.push({
+                    text: `Nitrate level is high (above 10 mg/L). Measured: ${nitrate} mg/L. Can be harmful, especially for infants.`,
+                    type: 'bad'
+                });
+            } else {
+                messages.push({
+                    text: `Nitrate level is within the safe range (≤10 mg/L). Measured: ${nitrate} mg/L.`,
+                    type: 'good'
+                });
+            }
+
+            // Temperature check
+            if (isNaN(temperature)) {
+                messages.push({
+                    text: 'Temperature reading missing or invalid.',
+                    type: 'warning'
+                });
+            } else if (temperature < 0 || temperature > 35) {
+                messages.push({
+                    text: `Temperature is outside the normal range (0 - 35°C). Measured: ${temperature}°C. May affect aquatic life or treatment efficiency.`,
+                    type: 'warning'
+                });
+            } else {
+                messages.push({
+                    text: `Temperature is within the normal range (0 - 35°C). Measured: ${temperature}°C.`,
+                    type: 'good'
+                });
+            }
+
+            // Determine overall assessment
+            const hasBad = messages.some(m => m.type === 'bad');
+            const hasWarning = messages.some(m => m.type === 'warning');
+
+            const overallEl = document.getElementById('overall');
+            const messagesEl = document.getElementById('messages');
+            const notesEl = document.getElementById('notes');
+            messagesEl.innerHTML = '';
+
+            if (hasBad) {
+                overallEl.textContent = 'Overall Assessment: UNSAFE — Immediate action required';
+                overallEl.className = 'overall bad';
+                notesEl.textContent = 'Unsafe reading(s) detected. Stop using the water for drinking until treated. Seek laboratory confirmation.';
+            } else if (hasWarning) {
+                overallEl.textContent = 'Overall Assessment: CAUTION — Some parameters need attention';
+                overallEl.className = 'overall warning';
+                notesEl.textContent = 'One or more parameters are borderline. Consider treatment or re-check readings.';
+            } else {
+                overallEl.textContent = 'Overall Assessment: SAFE — Water looks good';
+                overallEl.className = 'overall good';
+                notesEl.textContent = 'All parameters are within suggested ranges for general use.';
+            }
+
+            // show messages
+            messages.forEach(m => {
+                const li = document.createElement('li');
+                const typeSpan = document.createElement('div');
+                typeSpan.className = 'msg-type ' + (m.type === 'good' ? 'msg-good' : (m.type === 'warning' ? 'msg-warning' : 'msg-bad'));
+                typeSpan.textContent = (m.type === 'good' ? 'GOOD' : (m.type === 'warning' ? 'WARNING' : 'BAD'));
+                const text = document.createElement('div');
+                text.innerHTML = m.text;
+                li.appendChild(typeSpan);
+                li.appendChild(text);
+                messagesEl.appendChild(li);
+            });
+
+            document.getElementById('resultArea').style.display = 'block';
+            // scroll to result for visibility on small screens:
+            document.getElementById('resultArea').scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+
+        // reset form + hide results
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            document.getElementById('waterTestForm').reset();
+            // hide results and re-populate defaults if desired:
+            document.getElementById('resultArea').style.display = 'none';
+            // optional: set some default values back
+            document.getElementById('ph').value = '7.2';
+            document.getElementById('turbidity').value = '2';
+            document.getElementById('hardness').value = '150';
+            document.getElementById('chlorine').value = '0.5';
+            document.getElementById('nitrate').value = '2';
+            document.getElementById('temperature').value = '22';
+        });
+    </script>
+</body>
+
+</html>
